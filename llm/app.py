@@ -1,26 +1,24 @@
 import faiss
 import pickle
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
+import os
+from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
+import google.generativeai as genai
 
-with open("metadata.pkl", "rb") as f:
+# Load environment variables
+load_dotenv()
+api_key = os.getenv("GEMINI_API_KEY")
+genai.configure(api_key=api_key)
+
+# Load FAISS index and metadata
+with open("embeddings/metadata.pkl", "rb") as f:
     metadata = pickle.load(f)
 
-index = faiss.read_index("chunks.index")
+index = faiss.read_index("embeddings/chunks.index")
+embedder = SentenceTransformer("all-MiniLM-L12-v2")
 
-embedder = SentenceTransformer('all-MiniLM-L6-v2')
-model_name = "google/flan-t5-base"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-pipe = pipeline("text2text-generation", model=model, tokenizer=tokenizer)
-
-MAX_INPUT_TOKENS = 512
-MAX_NEW_TOKENS = 300
-
-def split_text(text, max_tokens=MAX_INPUT_TOKENS):
-    tokens = tokenizer.encode(text, truncation=False)
-    for i in range(0, len(tokens), max_tokens):
-        yield tokenizer.decode(tokens[i:i + max_tokens], skip_special_tokens=True)
+# Setup Gemini model
+model = genai.GenerativeModel("gemini-1.5-flash-8b")
 
 def get_top_chunks(query, k=3):
     query_embedding = embedder.encode([query])
@@ -33,24 +31,30 @@ def generate_answer(query):
     for i, chunk in enumerate(top_chunks, 1):
         print(f"\nChunk {i}:\n{chunk['chunk_text'][:300]}...\n")
 
+    combined_context = "\n\n".join([c["chunk_text"] for c in top_chunks])
+    prompt = f"""You are a helpful assistant designed to analyze insurance policy documents.
+Based on the following text, answer the user's question in a clear and structured JSON format with the following fields:
+- decision: (approved/rejected/depends)
+- amount: (if any specific mentioned, otherwise "as per policy")
+- justification: mention the specific clauses used.
 
-    all_outputs = []
+--- POLICY EXCERPTS ---
+{combined_context}
 
-    for chunk in top_chunks:
-        prompt = f"Answer the following question based on the text:\n\n{chunk['chunk_text']}\n\nQuestion: {query}"
-        for sub_prompt in split_text(prompt):
-            output = pipe(sub_prompt, max_new_tokens=MAX_NEW_TOKENS)[0]['generated_text']
-            all_outputs.append(output)
+--- USER QUERY ---
+{query}
 
-  
-    final_answer = "\n---\n".join(all_outputs)
-    return final_answer
+Respond in JSON only."""
+
+    response = model.generate_content(prompt)
+    return response.text
 
 if __name__ == "__main__":
-    print("Document Retrieval Chat App with FLAN-T5 and Chunk Splitting")
+    print("🔎 Gemini-Powered Document Query App")
     while True:
         query = input("Enter your question (or type 'exit'): ").strip()
         if query.lower() == "exit":
             break
         answer = generate_answer(query)
-        print(f"\n Answer:\n{answer}")
+        print(f"\n📄 Answer:\n{answer}")
+
