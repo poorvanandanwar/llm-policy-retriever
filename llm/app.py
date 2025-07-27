@@ -20,7 +20,7 @@ embedder = SentenceTransformer("all-MiniLM-L12-v2")
 # Setup Gemini model
 model = genai.GenerativeModel("gemini-1.5-flash-8b")
 
-def get_top_chunks(query, k=3):
+def get_top_chunks(query, k=5):
     query_embedding = embedder.encode([query])
     distances, indices = index.search(query_embedding, k)
     return [metadata[i] for i in indices[0]]
@@ -32,19 +32,21 @@ def generate_answer(query):
         print(f"\nChunk {i}:\n{chunk['chunk_text'][:300]}...\n")
 
     combined_context = "\n\n".join([c["chunk_text"] for c in top_chunks])
-    prompt = f"""You are a helpful assistant designed to analyze insurance policy documents.
-Based on the following text, answer the user's question in a clear and structured JSON format with the following fields:
-- decision: (approved/rejected/depends)
-- amount: (if any specific mentioned, otherwise "as per policy")
-- justification: mention the specific clauses used.
+    prompt = f"""
+You are a helpful assistant designed to answer queries about health insurance policy documents.
 
---- POLICY EXCERPTS ---
+Given the excerpts below, answer the user's query in a **clear, natural-sounding sentence**. If the answer is explicitly found in the excerpts, quote it as-is or paraphrase it concisely. If not directly found, say "Information not found in policy excerpts."
+
+📄 POLICY EXCERPTS:
 {combined_context}
 
---- USER QUERY ---
+❓ USER QUERY:
 {query}
 
-Respond in JSON only."""
+💬 RESPONSE FORMAT (reply only with this):
+- answer: <Your one-sentence answer or "Information not found in policy excerpts">
+"""
+
 
     response = model.generate_content(prompt)
     return response.text
