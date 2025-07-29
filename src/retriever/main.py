@@ -9,9 +9,11 @@ def load_index_and_metadata(index_path="embeddings/chunks.index", meta_path="emb
         metadata = pickle.load(f)
     return index, metadata
 
-def encode_query(query, model_name="all-MiniLM-L6-v2"):
+def encode_query(query, model_name="all-MiniLM-L12-v2"):
     model = SentenceTransformer(model_name)
-    return model.encode([query])[0] 
+    embedding = model.encode([query])[0]
+    embedding = embedding / np.linalg.norm(embedding)
+    return embedding
 
 def search_index(query_embedding, index, metadata, top_k=5):
     D, I = index.search(np.array([query_embedding]), k=top_k)
@@ -19,12 +21,12 @@ def search_index(query_embedding, index, metadata, top_k=5):
     return results
 
 def main():
-    query = "46M, knee surgery, Pune, 3-month-old policy"
+    query = "Are there any sub-limits on room rent and ICU charges for Plan A?"
     index, metadata = load_index_and_metadata()
     query_embedding = encode_query(query)
     top_chunks = search_index(query_embedding, index, metadata, top_k=5)
 
-    print("\n Top Matching Chunks:")
+    print("\n🔍 Top Matching Chunks:")
     for i, chunk in enumerate(top_chunks):
         print(f"\n--- Result {i+1} ---")
         print(f"Clause ID: {chunk.get('clause_id')}")
