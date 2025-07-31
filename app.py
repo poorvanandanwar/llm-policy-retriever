@@ -9,12 +9,11 @@ from flask import Flask, request, jsonify
 from sentence_transformers import SentenceTransformer
 import google.generativeai as genai
 
-# Load environment variables
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=api_key)
 
-# Load model and index
+
 embedder = SentenceTransformer("all-MiniLM-L12-v2")
 index = faiss.read_index("embeddings/chunks.index")
 with open("embeddings/metadata.pkl", "rb") as f:
