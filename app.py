@@ -21,18 +21,18 @@ model = genai.GenerativeModel("gemini-1.5-flash-8b")
 embedder = SentenceTransformer("all-MiniLM-L12-v2")
 
 # Load static index and metadata
-index = faiss.read_index("embeddings/chunks.index")
-with open("embeddings/metadata.pkl", "rb") as f:
+'''index = faiss.read_index("emdeddings/chunks.index")
+with open("emdeddings/metadata.pkl", "rb") as f:
     metadata = pickle.load(f)
 
-app = Flask(__name__)
+
 
 # --- FAISS Retrieval for Known Docs ---
 def get_top_chunks_static(query, k=3):
     query_embedding = embedder.encode([query])
     distances, indices = index.search(query_embedding, k)
-    return [metadata[i] for i in indices[0]]
-
+    return [metadata[i] for i in indices[0]]'''
+app = Flask(__name__)
 # --- PDF Parsing + Embedding for Dynamic Docs ---
 def extract_chunks_from_pdf_url(pdf_url, chunk_size=200):
     response = requests.get(pdf_url)
