@@ -1,6 +1,6 @@
 import requests
 
-url = "http://localhost:8080/hackrx/run"
+url = "https://policy-api-881938266006.asia-south1.run.app/hackrx/run"
 headers = {
     "Authorization": "Bearer 1f6a94eede58fbcb41c3980661fcab4ce4359fcac8b58038ba206d000dda74a2",  # replace with actual key or dummy for local
     "Content-Type": "application/json"
@@ -21,6 +21,13 @@ data = {
     ]
 }
 
+try:
+    response = requests.post(url, headers=headers, json=data)
+    print("Status Code:", response.status_code)
+    print("Response:")
+    print(response.json())
+except Exception as e:
+    print("❌ Request failed:", str(e))
 response = requests.post(url, headers=headers, json=data)
 print(response.status_code)
 print(response.json())
