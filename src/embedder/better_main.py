@@ -29,5 +29,5 @@ def generate_and_save_embeddings(chunks, model_name="all-mpnet-base-v2", output_
     print(f"Saved {len(chunks)} normalized embeddings to {output_dir}/")
 
 if __name__ == "__main__":
-    chunks = load_chunks("chunks/all_policy_chunks.json")
+    chunks = load_chunks("../../chunks/all_policy_chunks.json")
     generate_and_save_embeddings(chunks)
